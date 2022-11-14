@@ -108,3 +108,8 @@ dist
 
 #venv
 .venv
+shortener_app/__init__.py
+*.pyc
+
+# TypeScript v1 declaration files
+venv/
