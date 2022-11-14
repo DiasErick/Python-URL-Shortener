@@ -102,3 +102,14 @@ dist
 
 # TernJS port file
 .tern-port
+
+#pycache
+.pyc
+
+#venv
+.venv
+shortener_app/__init__.py
+*.pyc
+
+# TypeScript v1 declaration files
+venv/
