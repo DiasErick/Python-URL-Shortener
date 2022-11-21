@@ -113,3 +113,5 @@ shortener_app/__init__.py
 
 # TypeScript v1 declaration files
 venv/
+
+shortener.db
