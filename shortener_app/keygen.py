@@ -9,10 +9,8 @@ def get_random_key(len: int = 5):
 
 def create_unique_key(db: Session, len: int = 5):    
     
-    #while True:
-    #temp_key = 
-    #if not crud.get_db_url_key(db=db, key=temp_key):
-        #if doses not exsit
-        #   break
+    temp_key = get_random_key(len)
+    while crud.get_db_url_key(db=db, key=temp_key):
+        temp_key = get_random_key(len)
 
-    return get_random_key(len)
+    return temp_key

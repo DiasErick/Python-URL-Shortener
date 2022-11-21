@@ -10,7 +10,6 @@ from starlette.datastructures import URL
 from . import crud, keygen, models, schemas
 from .database import SessionLocal, engine
 
-app = FastAPI()
 models.Base.metadata.create_all(bind=engine)
 
 def get_db():
@@ -33,12 +32,44 @@ def reat_all():
     db = SessionLocal()
     return db.query(URL).all()
 
+@app.post("/url", response_model=schemas.URLInfo)
+def create_url(url: schemas.URLBase, db: Session = Depends(get_db)):
+    if not validators.url(url.target_url):
+        raise_bad_request(message="Your provided URL is not valid")
+    
+    db_url = crud.create_db_url(db=db, url = url)    
+    return get_admin_info(db_url)
+
+@app.get("/{url_key}")
+def forward_to_target_url(
+    url_key: str,
+    request: Request,
+    db: Session = Depends(get_db)
+    ):
+    if db_url := crud.get_db_url_key(db=db, key = url_key):
+        crud.update_db_url_click(db=db, db_url = db_url)
+        return RedirectResponse(db_url.target_url)
+    else:
+        raise_not_found(request)    
+
 @app.get("/admin/{secret_key}", name="administration info",  response_model=schemas.URLInfo)
 def get_url_info(secret_key: str, request: Request, db: Session = Depends(get_db)):
     if db_url:= crud.get_db_url_secret(db = db, secret= secret_key):
         return get_admin_info(db_url)
     else:
         raise raise_not_found(request)
+
+@app.delete("/admin/{secret_key}")
+def delete_url(secret_key: str, request: Request, db: Session = Depends(get_db)):
+    if db_url := crud.deactivate_db_url_secret(db=db, secret_key = secret_key):
+        message = f"Successfully deleted shortened URL for '{db_url.target_url}'"
+        return {"detail": message}
+    else:
+        raise_not_found(request)
+        
+#TODO Active an URL
+#TODO Create a shorter URL with custom key from user
+#TODO Reset the counter of clicks
 
 def get_admin_info(db_url: models.URL) -> schemas.URLInfo:
     base_url = URL(get_settings().base_url)
@@ -56,21 +87,3 @@ def raise_not_found(request):
     message = f"URL '{request.url}' does not exist"
     raise HTTPException(status_code = 404, detail=message)
 
-@app.post("/url", response_model=schemas.URLInfo)
-def create_url(url: schemas.URLBase, db: Session = Depends(get_db)):
-    if not validators.url(url.target_url):
-        raise_bad_request(message="Your provided URL is not valid")
-    
-    db_url = crud.create_db_url(db=db, url = url)    
-    return get_admin_info(db_url)
-
-@app.get("/{url_key}")
-def forward_to_target_url(
-    url_key: str,
-    request: Request,
-    db: Session = Depends(get_db)
-    ):
-    if db_url := crud.get_db_url_key(db=db, key = models.URL.key):
-        return RedirectResponse(db_url.target_url)
-    else:
-        raise_not_found(request)
