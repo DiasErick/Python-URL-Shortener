@@ -5,7 +5,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from . import models, schemas, keygen, crud
+from . import crud, keygen, models, schemas
 from .database import SessionLocal, engine
 
 app = FastAPI()
@@ -42,8 +42,10 @@ def raise_not_found(request):
 def create_url(url: schemas.URLBase, db: Session = Depends(get_db)):
     if not validators.url(url.target_url):
         raise_bad_request(message="Your provided URL is not valid")
-        
-    db_url = crud.create_db_url(db, url.target_url)
+
+    
+    db_url = crud.create_db_url(db=db, url = url)
+    
     db_url.url = db_url.key
     db_url.admin_url = db_url.secret_key
 
@@ -55,7 +57,7 @@ def forward_to_target_url(
     request: Request,
     db: Session = Depends(get_db)
     ):
-    if db_url := crud.get_db_url_key(db=db,key = models.URL.key):
+    if db_url := crud.get_db_url_key(db=db, key = models.URL.key):
         return RedirectResponse(db_url.target_url)
     else:
         raise_not_found(request)
